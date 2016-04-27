@@ -38,14 +38,56 @@ public class Main {
                 break;
             case 3:
                 System.out.println("Encryption Selected");
+                System.out.println("");
 
+                boolean keepGoing = true;
+                while (keepGoing) {
+                    System.out.println("Please enter file to encrypt, must be a .txt format!!");
+                    String input = sIn.nextLine();
+
+                    if (input.equals("")) {
+                        System.out.println("Please enter a valid respone");
+                    } else {
+                        File fInput = new File(input);
+                        if (!fInput.exists()) {
+                            System.out.println("Please enter valid file name!");
+                        } else {
+                            generateKeys();
+                            System.out.println("Encrypting...");
+                            encryptFile(input, "EncryptedOUT.txt");
+                            keepGoing = false;
+                        }
+                    }
+                }
                 break;
             case 4:
                 System.out.println("Decryption Selected");
+                System.out.println("");
+
+                keepGoing = true;
+                while (keepGoing) {
+                    System.out.println("Please enter file to decrypt, must be a .txt format!!");
+                    String input = sIn.nextLine();
+
+                    if (input.equals("")) {
+                        System.out.println("Please enter a valid respone");
+                    } else {
+                        File fInput = new File(input);
+                        if (!fInput.exists()) {
+                            System.out.println("Please enter valid file name!");
+                        } else {
+                            generateKeys();
+                            System.out.println("Decrypting...");
+                            encryptFile(input, "DecryptedOUT.txt");
+                            keepGoing = false;
+                        }
+                    }
+                }
                 System.exit(0);
                 break;
             case 5:
                 System.out.println("Exit Selected");
+                System.exit(0);
                 break;
             default:
                 System.out.println("-Error-");
@@ -61,23 +103,46 @@ public class Main {
     }
 
     public static void interactiveMode() throws IOException {
-        //System.out.println("Would you like to print these result to a file?");
-        //String input = sIn.nextLine();
 
-        //if (input == "y" || input == "Y" || input == "yes" || input == "Yes"){
-        //    System.out.println("Printing to file...")
-        //    writeKeyToFile();
-        //} else  if (input == "n" || input == "N" || input == "no" || input == "No"){
-        //    System.out.println("You entered no")
-        //} else {
-        //    System.out.println("Please enter a valid response...");
-        //    interactiveMode();
-        //}
-        //System.out.println("");
+
+        System.out.println("Would you like to encrypt file? (File.txt)");
+        String input = sIn.nextLine();
+
+        if (input.equals("y") || input.equals("Y") || input.equals("yes") || input.equals("Yes")){
+            System.out.println("Encrypting...");
+        } else  if (input.equals("n") || input.equals("N") || input.equals("no") || input.equals("No")){
+            System.out.println("Exiting...");
+            System.exit(0);
+        } else {
+            System.out.println("You entered: "+input);
+            System.out.println("Please enter a valid response...");
+            interactiveMode();
+        }
+
         encryptFile("File.txt", "EncryptedOUT.txt");
         System.out.println("Finished encryption");
-        System.out.println("----------Beginning Decryption--------");
+
+        boolean keepGoing = true;
+        while (keepGoing) {
+            System.out.println("Would you like to decrypt file?");
+            input = sIn.nextLine();
+
+            if (input.equals("y") || input.equals("Y") || input.equals("yes") || input.equals("Yes")) {
+                System.out.println("Decrypting...");
+                keepGoing = false;
+            } else if (input.equals("n") || input.equals("N") || input.equals("no") || input.equals("No")) {
+                System.out.println("Exiting...");
+                System.exit(0);
+            } else {
+                System.out.println("You entered: " + input);
+                System.out.println("Please enter a valid response...");
+                interactiveMode();
+            }
+        }
+
+        //System.out.println("Beginning Decryption");
         decryptFile("EncryptedOUT.txt", "DecryptedOUT.txt");
+
     }
 
     public static void encryptFile(String iFile, String oFile) throws IOException {
@@ -94,27 +159,38 @@ public class Main {
         BigInteger encrypted;
 
         try {
-            Scanner scan = new Scanner(file);
+            Scanner lineScanner = new Scanner(file);
 
-            while (scan.hasNext()) { //each word sperated by space
-                word = scan.next();
-                //System.out.println(word);
-                String numWord = strToNumFormat(word);
-                //System.out.println(numWord);
+            while (lineScanner.hasNextLine()) {
+                String line = lineScanner.nextLine();
+                Scanner scan = new Scanner(line);
 
-                int length = numWord.length(), index=3;
-                String subWord = "";
-                while(index < length+3) {
-                    subWord = numWord.substring(index-3, index);
+                while (scan.hasNext()) { //each line
+                    word = scan.next();
+                    //System.out.println(word);
+                    String numWord = strToNumFormat(word);
+                    //System.out.println(numWord);
 
-                    encrypted = encrypt(subWord);
-                    //encrypted = encrypt(new BigInteger(word.toCharArray()));
-                    //System.out.println("Encrypted--"+encrypted.toString());
+                    int length = numWord.length(), index = 3;
+                    String subWord = "";
+                    while (index < length + 3) {
+                        subWord = numWord.substring(index - 3, index);
+
+                        encrypted = encrypt(subWord);
+                        //encrypted = encrypt(new BigInteger(word.toCharArray()));
+                        //System.out.println("Encrypted--"+encrypted.toString());
+                        bw.write(encrypted.toString());
+                        bw.write(" ");
+                        index += 3;
+                    }
+                    encrypted = encrypt("32");
                     bw.write(encrypted.toString());
                     bw.write(" ");
-                    index+=3;
                 }
-                encrypted = encryptSpace();
+                encrypted = encrypt("13"); //Carriage Return
+                bw.write(encrypted.toString());
+                bw.write(" ");
+                encrypted = encrypt("10"); //NewLine
                 bw.write(encrypted.toString());
                 bw.write(" ");
             }
@@ -164,8 +240,50 @@ public class Main {
         bw.close();
     }
 
-    public static void generateKeys() {
-        System.out.println("Generating keys..");
+    public static void loadKeysFromFile() throws IOException {
+        File publicFile = new File("Keys/public.txt");
+        if (!publicFile.exists()) {
+            System.out.println("Could not find Keys/public.txt file!");
+            generateKeys();
+        }
+        File privateFile = new File("Keys/private.txt");
+        if (!privateFile.exists()) {
+            System.out.println("Could not find Keys/private.txt file!");
+            generateKeys();
+        }
+        File modulusFile = new File("Keys/modulus.txt");
+        if (!modulusFile.exists()) {
+            System.out.println("Could not find Keys/modulus.txt file!");
+            generateKeys();
+        }
+        Scanner publicScanner = new Scanner(publicFile);
+        String line = publicScanner.nextLine();
+        publicKey = new BigInteger(line);
+
+        Scanner privateScanner = new Scanner(privateFile);
+        line = privateScanner.nextLine();
+        privateKey = new BigInteger(line);
+
+        Scanner modulusScanner = new Scanner(modulusFile);
+        line = modulusScanner.nextLine();
+        n = new BigInteger(line);
+    }
+
+    public static void generateKeys() throws IOException{
+        System.out.println("Would you like to generate keys?");
+        String input = sIn.nextLine();
+
+        if (input.equals("y") || input.equals("Y") || input.equals("yes") || input.equals("Yes")){
+            System.out.println("Generating keys...");
+        } else  if (input.equals("n") || input.equals("N") || input.equals("no") || input.equals("No")){
+            System.out.println("Using keys from file...");
+            loadKeysFromFile();
+        } else {
+            System.out.println("You entered: "+input);
+            System.out.println("Please enter a valid response...");
+            generateKeys();
+        }
+
         BigInteger p, q, phi;
         Boolean prime;
 
@@ -211,11 +329,24 @@ public class Main {
         System.out.println("n (modulus):");
         System.out.println(n);
 
-        return;
-    }
+        System.out.println("Would you like to print these result to a file?");
+        input = sIn.nextLine();
 
-    public static void printKeyToFile(){
-        //stuff
+        boolean loopDone = true;
+        while(loopDone) {
+            if (input.equals("y") || input.equals("Y") || input.equals("yes") || input.equals("Yes")) {
+                System.out.println("Writing to file...");
+                writeKeyToFile();
+                loopDone = false;
+            } else if (input.equals("n") || input.equals("N") || input.equals("no") || input.equals("No")) {
+                System.out.println("You entered no");
+                loopDone = false;
+            } else {
+                System.out.println("You entered:" + input);
+                System.out.println("Please enter a valid response...");
+            }
+        }
+        return;
     }
 
     public static String strToNumFormat(String word) {
@@ -264,6 +395,41 @@ public class Main {
         return String.valueOf(ch);
     }
 
+    public static void writeKeyToFile() throws IOException {
+        File keyDir = new File("Keys");
+        if (!keyDir.exists()) {
+            System.out.println("creating directory: Keys");
+            boolean result = false;
+            try{
+                keyDir.mkdir();
+            }
+            catch(SecurityException se){
+                System.out.println("Fix Permissions!!!");
+                System.exit(0);
+            }
+        }
+
+        File publicFile = new File("Keys/public.txt");
+        FileWriter fwPublic = new FileWriter(publicFile);
+        BufferedWriter bwPublic = new BufferedWriter(fwPublic);
+        bwPublic.write(publicKey.toString());
+        bwPublic.close();
+
+        File privateFile = new File("Keys/private.txt");
+        FileWriter fwPrivate = new FileWriter(privateFile);
+        BufferedWriter bwPrivate = new BufferedWriter(fwPrivate);
+        bwPrivate.write(privateKey.toString());
+        bwPrivate.close();
+
+        File modulusFile = new File("Keys/modulus.txt");
+        FileWriter fwModulus = new FileWriter(modulusFile);
+        BufferedWriter bwModulus = new BufferedWriter(fwModulus);
+        bwModulus.write(n.toString());
+        bwModulus.close();
+
+
+    }
+
     public static BigInteger encrypt(String message) {
         // will use global values publicKey and n
         BigInteger exponent, result, number;
@@ -273,9 +439,9 @@ public class Main {
         return result;
     }
 
-    public static BigInteger encryptSpace() {
+    public static BigInteger encryptString(String num) {
         // will use global values publicKey and n
-        BigInteger exponent, result, number=new BigInteger("32");
+        BigInteger exponent, result, number=new BigInteger(num);
         result = number.modPow(publicKey,n);
 
         return result;
