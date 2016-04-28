@@ -17,7 +17,7 @@ public class Main {
         System.out.println("|     -RSA Encryption-     |");
         System.out.println("============================");
         System.out.println("| Options:                 |");
-        System.out.println("|     1. Interactive       |");
+        System.out.println("|     1. Demo Mode         |");
         System.out.println("|     2. Generate Keys     |");
         System.out.println("|     3. Encrypt           |");
         System.out.println("|     4. Decrypt           |");
@@ -28,7 +28,7 @@ public class Main {
         // Switch construct
         switch (swValue) {
             case 1:
-                System.out.println("Interactive Mode Selected...");
+                System.out.println("Demo Selected...");
                 generateKeys();
                 interactiveMode();
                 break;
@@ -53,7 +53,6 @@ public class Main {
                             System.out.println("Please enter valid file name!");
                         } else {
                             generateKeys();
-                            System.out.println("Encrypting...");
                             encryptFile(input, "EncryptedOUT.txt");
                             keepGoing = false;
                         }
@@ -76,9 +75,10 @@ public class Main {
                         if (!fInput.exists()) {
                             System.out.println("Please enter valid file name!");
                         } else {
-                            generateKeys();
-                            System.out.println("Decrypting...");
-                            encryptFile(input, "DecryptedOUT.txt");
+                            //generateKeys();
+                            loadKeysFromFile(0,1);
+
+                            decryptFile(input, "DecryptedOUT.txt");
                             keepGoing = false;
                         }
                     }
@@ -109,7 +109,7 @@ public class Main {
         String input = sIn.nextLine();
 
         if (input.equals("y") || input.equals("Y") || input.equals("yes") || input.equals("Yes")){
-            System.out.println("Encrypting...");
+            //System.out.println("Encrypting...");
         } else  if (input.equals("n") || input.equals("N") || input.equals("no") || input.equals("No")){
             System.out.println("Exiting...");
             System.exit(0);
@@ -128,7 +128,7 @@ public class Main {
             input = sIn.nextLine();
 
             if (input.equals("y") || input.equals("Y") || input.equals("yes") || input.equals("Yes")) {
-                System.out.println("Decrypting...");
+                //System.out.println("Decrypting...");
                 keepGoing = false;
             } else if (input.equals("n") || input.equals("N") || input.equals("no") || input.equals("No")) {
                 System.out.println("Exiting...");
@@ -157,7 +157,9 @@ public class Main {
         BufferedWriter bw = new BufferedWriter(fw);
         String word, subMes;
         BigInteger encrypted;
-
+        System.out.println("Beginning timer...");
+        System.out.println("Encrypting...");
+        long startTime = System.nanoTime();
         try {
             Scanner lineScanner = new Scanner(file);
 
@@ -199,10 +201,9 @@ public class Main {
         {
             e.printStackTrace();
         }
-        //catch(IOException e)
-        //{
-        //    e.printStackTrace();
-        //}
+        long elapsedTime = System.nanoTime() - startTime;
+
+        System.out.println("Timer stopped, Elasped Time:"+elapsedTime/1000000000.0+" s");
         bw.close();
     }
 
@@ -213,6 +214,9 @@ public class Main {
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
         String word;
         BigInteger decrypted;
+        System.out.println("Beginning timer...");
+        System.out.println("Decrypting...");
+        long startTime = System.nanoTime();
 
         try {
             Scanner scan = new Scanner(file);
@@ -233,39 +237,45 @@ public class Main {
         {
             e.printStackTrace();
         }
-        //catch(IOException e)
-        //{
-        //    e.printStackTrace();
-        //}
+        long elapsedTime = System.nanoTime() - startTime;
+        System.out.println("Timer stopped, Elasped Time:"+elapsedTime/1000000000.0+" s");
         bw.close();
     }
 
-    public static void loadKeysFromFile() throws IOException {
-        File publicFile = new File("Keys/public.txt");
-        if (!publicFile.exists()) {
-            System.out.println("Could not find Keys/public.txt file!");
-            generateKeys();
+    public static void loadKeysFromFile(int publicFlag, int privateFlag) throws IOException {
+        if (publicFlag == 1) {
+            System.out.println("Loading Keys/public.txt");
+            File publicFile = new File("Keys/public.txt");
+            if (!publicFile.exists()) {
+                System.out.println("FaTaL!!\nCould not find Keys/public.txt file!");
+                System.exit(0);
+            }
+            Scanner publicScanner = new Scanner(publicFile);
+            String line = publicScanner.nextLine();
+            publicKey = new BigInteger(line);
+
         }
-        File privateFile = new File("Keys/private.txt");
-        if (!privateFile.exists()) {
-            System.out.println("Could not find Keys/private.txt file!");
-            generateKeys();
+        if (privateFlag == 1) {
+            System.out.println("Loading Keys/private.txt");
+            File privateFile = new File("Keys/private.txt");
+            if (!privateFile.exists()) {
+                System.out.println("FaTaL!!\nCould not find Keys/private.txt file!");
+                System.exit(0);
+            }
+            Scanner privateScanner = new Scanner(privateFile);
+            String line = privateScanner.nextLine();
+            privateKey = new BigInteger(line);
         }
+
+        System.out.println("Loading Keys/modulus.txt");
         File modulusFile = new File("Keys/modulus.txt");
         if (!modulusFile.exists()) {
-            System.out.println("Could not find Keys/modulus.txt file!");
-            generateKeys();
+            System.out.println("FaTaL!!\nCould not find Keys/modulus.txt file!");
+            System.exit(0);
         }
-        Scanner publicScanner = new Scanner(publicFile);
-        String line = publicScanner.nextLine();
-        publicKey = new BigInteger(line);
-
-        Scanner privateScanner = new Scanner(privateFile);
-        line = privateScanner.nextLine();
-        privateKey = new BigInteger(line);
 
         Scanner modulusScanner = new Scanner(modulusFile);
-        line = modulusScanner.nextLine();
+        String line = modulusScanner.nextLine();
         n = new BigInteger(line);
     }
 
@@ -277,31 +287,51 @@ public class Main {
             System.out.println("Generating keys...");
         } else  if (input.equals("n") || input.equals("N") || input.equals("no") || input.equals("No")){
             System.out.println("Using keys from file...");
-            loadKeysFromFile();
+            loadKeysFromFile(1,1);
+            return;
         } else {
             System.out.println("You entered: "+input);
             System.out.println("Please enter a valid response...");
             generateKeys();
         }
 
+        System.out.println("Would you like to specify a BIT LENGTH (leave blank if you want to keep current)?\n Current:"+BIT_LENGTH);
+        System.out.println("Remember if you choose a large number it could affect performance!");
+        input = sIn.nextLine();
+
+        if (input.equals("")){
+            System.out.println("Using current value");
+        } else {
+            BIT_LENGTH = Integer.parseInt(input);
+            System.out.println("Using: "+input+" as BIT LENGTH");
+        }
+        System.out.println("\nFinding primes...");
         BigInteger p, q, phi;
         Boolean prime;
 
         p = findNumber();
         prime = isPrime(p);
+        int counter = 0;
         while (!prime) {
             p = findNumber();
             prime = isPrime(p);
+            counter++;
         }
+        System.out.println("I threw away "+counter+" numbers!");
         System.out.println("Found first prime!");
+        System.out.println(p+"\n");
 
         q = findNumber();
         prime = isPrime(q);
-        while (!prime) {
+        counter=0;
+        while (!prime || q.equals(p)) {
             q = findNumber();
             prime = isPrime(q);
+            counter++;
         }
+        System.out.println("I threw away "+counter+" numbers!");
         System.out.println("Found second prime!");
+        System.out.println(q+"\n");
 
         //find n = p * q
         n = p.multiply(q);
@@ -431,28 +461,20 @@ public class Main {
     }
 
     public static BigInteger encrypt(String message) {
-        // will use global values publicKey and n
         BigInteger exponent, result, number;
         number = new BigInteger(message);
-        result = number.modPow(publicKey,n);
 
-        return result;
-    }
-
-    public static BigInteger encryptString(String num) {
-        // will use global values publicKey and n
-        BigInteger exponent, result, number=new BigInteger(num);
+        // m^e mod n
         result = number.modPow(publicKey,n);
 
         return result;
     }
 
     public static BigInteger decrypt(String message) {
-        // will use global values
         BigInteger exponent, result, number;
         number = new BigInteger(message);
 
-        //   m^e mod n
+        //   m^d mod n
         result = number.modPow(privateKey,n);
 
         return result;
@@ -472,10 +494,6 @@ public class Main {
         if (!two.equals(number) && BigInteger.ZERO.equals(number.mod(two)))
             return false;
 
-//        for (BigInteger i = new BigInteger("3"); i.multiply(i).compareTo(number) < 1; i = i.add(two)) {
-//            if (BigInteger.ZERO.equals(number.mod(i)))
-//                return false;
-//        }
         return true;
     }
 }
